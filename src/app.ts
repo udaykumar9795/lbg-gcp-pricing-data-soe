@@ -39,13 +39,12 @@ const options = {
 
 const swaggerSpec = swaggerJSDoc(options);
 // Set up Swagger
-// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec) as express.RequestHandler);
-
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec) as express.RequestHandler);
 
 /**
  * @swagger
- * /postgres-data:
+ * /loan-details-data:
  *   get:
  *     summary: Retrieve all loan details
  *     responses:
@@ -76,7 +75,7 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT),
 });
 
-app.get('/api/postgres-data', async (req, res) => {
+app.get('/api/loan-details-data', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM "pricingschema"."loan_details"');
     res.json(result.rows);
@@ -89,7 +88,7 @@ app.get('/api/postgres-data', async (req, res) => {
 
 /**
  * @swagger
- * /postgres-data-by-email:
+ * /loan-details-data-by-email:
  *   get:
  *     summary: Retrieve loan details by email ID
  *     parameters:
@@ -126,7 +125,7 @@ app.get('/api/postgres-data', async (req, res) => {
  */
 
 // Add a new endpoint to fetch data based on email_id
-app.get('/api/postgres-data-by-email', async (req: Request, res: Response) => {
+app.get('/api/loan-details-data-by-email', async (req: Request, res: Response) => {
   const emailId = req.query.email_id;
   if (!emailId) {
       return res.status(400).send('email_id query parameter is required');
