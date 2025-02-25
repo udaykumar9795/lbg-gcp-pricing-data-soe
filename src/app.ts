@@ -1,15 +1,15 @@
 import express from "express";
 import { Request, Response } from 'express-serve-static-core';
-import { Storage } from "@google-cloud/storage";
-import { BigQuery } from "@google-cloud/bigquery";
-import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from 'fs';
-// import { Pool } from 'pg';
+import path from "path";
 import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
+
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -20,43 +20,53 @@ dotenv.config();
 const app = express();
 const port = 3000;
 
-// Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
-process.env.GOOGLE_APPLICATION_CREDENTIALS = path.resolve(__dirname, 'playpen-122b3f-d1a4dadaa8c8.json');
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Loan Details API',
+      version: '1.0.0',
+      description: 'API documentation for Loan Details to fetch data from postgreSQL',
+    },
+    servers: [
+      {
+        url: `http://localhost:${port}/api`,
+      },
+    ],
+  },
+  apis: ['./src/app.ts'], // Path to the API docs
+};
 
-const keyFilePath = path.join(__dirname,'../src/playpen-122b3f-d1a4dadaa8c8.json');
+const swaggerSpec = swaggerJSDoc(options);
+// Set up Swagger
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec) as express.RequestHandler);
 
-if(!fs.existsSync(keyFilePath)) {
-    process.exit(1);
-    }
 
-    console.log(`Key file found: ${keyFilePath}`);
-
-// Create a storage client
-const storage = new Storage({
-    projectId: 'playpen-122b3f',
-    keyFilename: keyFilePath
-    });
-// Create a BigQuery client
-const bigquery = new BigQuery({
-    projectId: 'playpen-122b3f',
-    keyFilename: keyFilePath
-    });
-
-app.get('/', (req, res) => {
-  res.send('Hello World!--------------------------->');
-});
-
-app.get('/bigquery-data', async (req, res) => {
-  const query = `SELECT * FROM \`${'ap_edhcon_dev_01_bqd_euwe2_mspstg_01'}.${'Mortgage_loan_table'}\` where EDH_PARTITION_DT between '2023-01-01' and '2025-01-01' LIMIT 10`;
-console.log(query);
-  try {
-    const [rows] = await bigquery.query(query);
-    res.json(rows);
-  } catch (error) {
-    console.error('Error querying BigQuery:', error);
-    res.status(500).send('Error querying BigQuery');
-  }
-});
+/**
+ * @swagger
+ * /postgres-data:
+ *   get:
+ *     summary: Retrieve all loan details
+ *     responses:
+ *       200:
+ *         description: A list of loan details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: The loan ID
+ *                     example: 1
+ *                   email_id:
+ *                     type: string
+ *                     description: The email ID associated with the loan
+ *                     example: example@example.com
+ */
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -66,7 +76,7 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT),
 });
 
-app.get('/postgres-data', async (req, res) => {
+app.get('/api/postgres-data', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM "pricingschema"."loan_details"');
     res.json(result.rows);
@@ -76,9 +86,47 @@ app.get('/postgres-data', async (req, res) => {
   }
 });
 
-// Add a new endpoint to fetch data based on email_id
 
-app.get('/postgres-data-by-email', async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /postgres-data-by-email:
+ *   get:
+ *     summary: Retrieve loan details by email ID
+ *     parameters:
+ *       - in: query
+ *         name: email_id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The email ID to filter loan details
+ *     responses:
+ *       200:
+ *         description: A list of loan details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: The loan ID
+ *                     example: 1
+ *                   email_id:
+ *                     type: string
+ *                     description: The email ID associated with the loan
+ *                     example: example@example.com
+ *       400:
+ *         description: email_id query parameter is required
+ *       404:
+ *         description: No records found with the given email_id
+ *       500:
+ *         description: Server error
+ */
+
+// Add a new endpoint to fetch data based on email_id
+app.get('/api/postgres-data-by-email', async (req: Request, res: Response) => {
   const emailId = req.query.email_id;
   if (!emailId) {
       return res.status(400).send('email_id query parameter is required');
