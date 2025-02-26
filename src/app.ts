@@ -1,4 +1,5 @@
 import express from "express";
+import { RequestHandlerParams } from 'express-serve-static-core';
 import { Request, Response } from 'express-serve-static-core';
 import { fileURLToPath } from "url";
 import { dirname } from "path";
