@@ -26,7 +26,7 @@ const options = {
     info: {
       title: 'Loan Details API',
       version: '1.0.0',
-      description: 'API documentation for Loan Details to fetch data from postgreSQL',
+      description: 'API documentation to fetch data from Loan Details Table',
     },
     servers: [
       {
@@ -39,9 +39,9 @@ const options = {
 
 const swaggerSpec = swaggerJSDoc(options);
 // Set up Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve as RequestHandlerParams, swaggerUi.setup(swaggerSpec) as RequestHandlerParams);
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec) as express.RequestHandler);
-
 /**
  * @swagger
  * /loan-details-data:
